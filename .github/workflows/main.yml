@@ -1,26 +1,47 @@
-name: Tor
+name: ADB Automation
 
 on:
-  schedule:
-    - cron: "*/1 * * * *"
+  push:
+    branches:
+      - main
 
 jobs:
-  gen-traffic:
+  setup_and_run_adb_script:
     runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Install Tor and Wget
-      
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tor wget
 
-      - name: Generate traffic
-        run: |
-          while true; do
-            N=$(shuf -i 1-100 -n 1)
-            echo "Making ${N} random requests"
-            shuf -n ${N} urls.txt | envsubst | xargs -t -I {} bash -c "curl -A 'Mozilla/5.0 (Android 12; Mobile; LG-M255; rv:100.0) Gecko/100.0 Firefox/100.0Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.61 Mobile Safari/537.36' {} -o /dev/null; sleep 1;" || true &
-            sleep 5
-          done
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install ADB
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y android-tools-adb
+
+    - name: Run ADB Automation script
+      run: |
+        while true; do
+          python3 your_script.py
+          EXIT_CODE=$?
+          sleep 20
+
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "Python script ทำงานเสร็จสมบูรณ์"
+          else
+            echo "มีข้อผิดพลาดในการทำงาน Python script รหัส: $EXIT_CODE"
+          fi
+        done
+
+    - name: Generate traffic
+      run: |
+        while true; do
+          N=$(shuf -i 1-100 -n 1)
+          echo "Making ${N} random requests"
+          shuf -n ${N} urls.txt | envsubst | xargs -t -I {} bash -c "curl -A 'Mozilla/5.0 (Android 12; Mobile; LG-M255; rv:100.0) Gecko/100.0 Firefox/100.0Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.61 Mobile Safari/537.36' {} -o /dev/null; sleep 1;" || true &
+          sleep 5
+         done
