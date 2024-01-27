@@ -1,4 +1,4 @@
-name: Tor# 02
+name: Tor
 
 on:
   schedule:
