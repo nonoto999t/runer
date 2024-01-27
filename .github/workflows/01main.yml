@@ -3,7 +3,7 @@ name: ADB Automation
 on:
   push:
     branches:
-      - mainsad
+      - 01main.yml
 
 jobs:
   setup_and_run_adb_script:
