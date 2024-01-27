@@ -3,7 +3,7 @@ name: ADB self-hosted
 on:
   push:
     branches:
-      - main
+      - main2
 
 jobs:
   setup_and_run_adb_script:
