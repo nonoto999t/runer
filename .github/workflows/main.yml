@@ -1,62 +1,44 @@
-name: CI
+name: ADB Automation
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
-    runs-on: windows-latest
+  setup_and_run_adb_script:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Download Ngrok
-      run: Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-    - name: Extract Ngrok
-      run: Expand-Archive ngrok.zip
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
 
-    - name: Auth Ngrok
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-
-    - name: Click Link and Wait
+    - name: Install ADB
       run: |
-        Start-Process chrome.exe -ArgumentList "--start-maximized", "https://movievip.pages.dev/home"
-        Start-Sleep -Seconds 5  # Wait for the page to load
-        
-        # Perform clicks (adjust the number of clicks as needed)
-        1..5 | ForEach-Object {
-          # Simulate a click at the center-right of the screen
-          Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point((([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width * 3) / 4), [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height / 2)
-          Add-Type -AssemblyName System.Windows.Forms
-          [System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
-          
-          # Wait for 3 seconds before the next click
-          Start-Sleep -Seconds 3
-        }
-        
-        # Reload the page (simulate a web page refresh)
-        Start-Sleep -Seconds 3
-        [System.Windows.Forms.SendKeys]::SendWait("{F5}")
-
-        # Wait for 3 seconds before the next round
-        Start-Sleep -Seconds 3
-
-        # Repeat the loop indefinitely
-        while ($true) {
-          # Reload the page (simulate a web page refresh)
-          Start-Sleep -Seconds 3
-          [System.Windows.Forms.SendKeys]::SendWait("{F5}")
-
-          # Wait for 3 seconds before the next round
-          Start-Sleep -Seconds 3
-        }
+        sudo apt-get update -y
+        sudo apt-get install -y android-tools-adb
+    - name: Set up GitHub Actions runner
+      run: |
+        mkdir actions-runner && cd actions-runner
+        curl -o actions-runner-linux-x64-2.312.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.312.0/actions-runner-linux-x64-2.312.0.tar.gz
+        echo "85c1bbd104d539f666a89edef70a18db2596df374a1b51670f2af1578ecbe031  actions-runner-linux-x64-2.312.0.tar.gz" | shasum -a 256 -c
+        tar xzf ./actions-runner-linux-x64-2.312.0.tar.gz
+        ./config.sh --url https://github.com/nonoto999t/RUNER1500 --token BE3XBEN3GHQ5JOBUN3SAV6LFW3XZU
+        nohup ./run.sh &
+    - name: Run ADB Automation script
+      run: |
+        while true; do
+          python3 MaserADB.py
+          EXIT_CODE=$?
+          sleep 20
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "Python script ทำงานเสร็จสมบูรณ์"
+          else
+            echo "มีข้อผิดพลาดในการทำงาน Python script รหัส: $EXIT_CODE"
+          fi
+        done
